@@ -1,0 +1,8 @@
+[
+  {"transaction_amount": 50.00, "transaction_hour": 14, "days_since_last_txn": 1, "avg_transaction_amount": 75.00,
+   "merchant_category": "grocery", "card_present": "yes", "international": "no", "transaction_count_24h": 2},
+  {"transaction_amount": 2500.00, "transaction_hour": 3, "days_since_last_txn": 0, "avg_transaction_amount": 100.00,
+   "merchant_category": "electronics", "card_present": "no", "international": "yes", "transaction_count_24h": 7},
+  {"transaction_amount": 1500.00, "transaction_hour": 2, "days_since_last_txn": 0, "avg_transaction_amount": 120.00,
+   "merchant_category": "jewelry", "card_present": "no", "international": "yes", "transaction_count_24h": 5}
+]

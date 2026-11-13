@@ -1,0 +1,6 @@
+# Files that run inside a Linux container keep Unix line ends (LF), also in a Windows checkout
+# (Git for Windows turns LF into CRLF by default). A CRLF "serve" launcher cannot start in the container:
+# exec fails with "no such file or directory".
+serve text eol=lf
+train text eol=lf
+*.sh text eol=lf

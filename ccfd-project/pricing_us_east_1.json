@@ -1,0 +1,8 @@
+{
+  "region": "us-east-1",
+  "read_on": "2026-10-04",
+  "source": "aws.amazon.com/sagemaker/pricing (on-demand, read on the date above; check it again before you use the numbers)",
+  "ml_m5_large_usd_per_hour": 0.115,
+  "serverless_usd_per_gb_second": 0.00002,
+  "serverless_memory_gb": 2
+}

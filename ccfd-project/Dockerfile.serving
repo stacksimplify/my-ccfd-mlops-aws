@@ -1,0 +1,49 @@
+# The serving image: the base project's tuned fraud model behind the SageMaker serving contract.
+# One image for a real-time endpoint, a serverless endpoint and a Batch Transform job.
+#
+# Why our own container: the newest built-in scikit-learn image is 1.9.0 on Python 3.12.
+# The base project's model was trained with scikit-learn 1.8.0 on Python 3.14. A pickled model must load with
+# the same scikit-learn it was saved with, so we ship our own container.
+#
+# The SageMaker contract:
+#   port 8080 with GET /ping and POST /invocations (m01_03_serving_api.py)
+#   started as "docker run <image> serve" (the serve launcher below, on the PATH)
+#   the model unpacked at /opt/ml/model (MODEL_DIR); no model and no MLflow inside the image
+#
+# No USER line, on purpose: a serverless endpoint (MLOps 11) runs the container as its own non-root user
+# on a read-only disk; the API writes no file.
+#
+# Build (on your EC2 VM, MLOps 02):  docker build -f Dockerfile.serving -t ccfd-serving:v1 .
+# For ECR (MLOps 06) the image is pushed as a Docker v2 manifest.
+
+# python:3.14.8-slim, pinned by the digest of its multi-platform index
+FROM python:3.14.8-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore \
+    MODEL_DIR=/opt/ml/model \
+    PATH="/opt/program:${PATH}"
+
+WORKDIR /opt/program
+
+# The lock first: a code change then does not reinstall the packages (layer cache).
+# Wheels only, so nothing is compiled in the image.
+COPY requirements-serving.txt constraints-serving.txt ./
+RUN pip install --only-binary=:all: -r requirements-serving.txt -c constraints-serving.txt
+
+# The base project's code, unchanged (the frozen copy), then the serving API, its page and the launcher
+COPY utils/ ./utils/
+COPY p5_04_inference_api.py m01_03_serving_api.py ./
+COPY templates/ ./templates/
+COPY --chmod=0755 serve ./
+# A Windows checkout can give the launcher CRLF line ends, and then "serve" cannot start;
+# remove any CR here (.gitattributes keeps it LF in git)
+RUN sed -i 's/\r$//' serve
+
+EXPOSE 8080
+
+# SageMaker replaces this with its own "serve" argument, which runs the same launcher
+CMD ["serve"]

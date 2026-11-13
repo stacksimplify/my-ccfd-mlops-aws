@@ -1,0 +1,58 @@
+# MLOps 14: continuous training. Starts ccfd-retraining-pipeline when a data pointer changes on main, by hand,
+# or on a weekly schedule (off by default: remove the # to switch it on). It only STARTS the pipeline; create or
+# update it with python m13_01_start_pipeline.py --upsert (MLOps 13). When the gate says PROMOTE, cd.yml takes the new package.
+name: ct
+on:
+  push:
+    branches: [main]
+    paths: ["ccfd-project/data/*.dvc"]
+  workflow_dispatch:
+    inputs:
+      data_version:
+        description: "A label for this data version (for example data-v3)"
+        default: "manual"
+  # schedule:
+  #   - cron: "0 3 * * 1"
+permissions:
+  contents: read
+  id-token: write
+env:
+  MLOPS_SUFFIX: ${{ vars.MLOPS_SUFFIX }}
+  MLOPS_EXECUTION_ROLE_ARN: ${{ secrets.MLOPS_EXECUTION_ROLE_ARN }}
+  MLOPS_SERVING_IMAGE_URI: ${{ secrets.MLOPS_SERVING_IMAGE_URI }}
+  MLOPS_TRAINING_IMAGE_URI: ${{ secrets.MLOPS_TRAINING_IMAGE_URI }}
+  MLOPS_MLFLOW_APP_ARN: ${{ secrets.MLOPS_MLFLOW_APP_ARN }}
+  MLOPS_OWNER: ${{ vars.MLOPS_OWNER }}
+  MLOPS_PURPOSE: ${{ vars.MLOPS_PURPOSE }}
+  MLOPS_CREATED: ${{ vars.MLOPS_CREATED }}
+jobs:
+  train:
+    runs-on: ubuntu-24.04
+    outputs:
+      promote: ${{ steps.run.outputs.promote }}
+      package_version: ${{ steps.run.outputs.package_version }}
+    defaults:
+      run:
+        working-directory: ccfd-project
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - run: "pip install --only-binary=:all: -r requirements-ci.txt"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - id: run
+        run: >-
+          python m13_01_start_pipeline.py --start --wait
+          --pointer-file data/credit_card_transactions_latest.csv.dvc
+          --data-version "${{ inputs.data_version || github.sha }}"
+  deploy:
+    needs: train
+    if: needs.train.outputs.promote == 'true'
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
+    with:
+      package_version: ${{ needs.train.outputs.package_version }}

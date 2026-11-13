@@ -1,0 +1,7 @@
+{
+  "BudgetName": "ccfd-mlops-monthly",
+  "BudgetLimit": {"Amount": "10", "Unit": "USD"},
+  "BudgetType": "COST",
+  "TimeUnit": "MONTHLY",
+  "FilterExpression": {"Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit"]}}}
+}

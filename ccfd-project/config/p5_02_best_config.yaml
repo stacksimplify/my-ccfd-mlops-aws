@@ -1,0 +1,14 @@
+method: GridSearchCV_with_money_weighted_class_weight
+best_params:
+  C: 0.1
+  class_weight:
+    0: 1
+    1: 100
+  l1_ratio: 1.0
+  max_iter: 5000
+  solver: saga
+best_cv_score: 34070.0
+test_f1: 0.0892018779342723
+test_net_benefit: 50550
+grid_size: 60
+cv_folds: 5

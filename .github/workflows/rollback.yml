@@ -1,0 +1,35 @@
+# MLOps 14: put the previous Approved package back on ccfd-prod (a direct update), set the current one Rejected
+# and move MLflow @champion back. Started by hand; it waits for the GitHub Environment "production" approval.
+name: rollback
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+env:
+  MLOPS_SUFFIX: ${{ vars.MLOPS_SUFFIX }}
+  MLOPS_EXECUTION_ROLE_ARN: ${{ secrets.MLOPS_EXECUTION_ROLE_ARN }}
+  MLOPS_MLFLOW_APP_ARN: ${{ secrets.MLOPS_MLFLOW_APP_ARN }}
+  MLFLOW_TRACKING_URI: ${{ secrets.MLOPS_MLFLOW_APP_ARN }}
+  MLOPS_OWNER: ${{ vars.MLOPS_OWNER }}
+  MLOPS_PURPOSE: ${{ vars.MLOPS_PURPOSE }}
+  MLOPS_CREATED: ${{ vars.MLOPS_CREATED }}
+jobs:
+  rollback:
+    runs-on: ubuntu-24.04
+    environment: production
+    defaults:
+      run:
+        working-directory: ccfd-project
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - run: "pip install --only-binary=:all: -r requirements-ci.txt"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: python m14_04_rollback.py
+      - run: python m14_04_check_sync.py

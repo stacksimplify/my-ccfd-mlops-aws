@@ -1,0 +1,11 @@
+#!/bin/sh
+# Train launcher. SageMaker starts a training container as "docker run <image> train";
+# this file is that "train" command (it is on the PATH in Dockerfile.training).
+# It runs the training entrypoint m08_03_train_entrypoint.py; any argument is passed on.
+# The model goes to /opt/ml/model; a failure reason goes to /opt/ml/output/failure.
+# On the laptop it also works from the ccfd-project folder: ./train --opt-ml sm-local
+set -e
+
+APP_DIR=$(dirname "$0")
+
+exec python "$APP_DIR/m08_03_train_entrypoint.py" "$@"

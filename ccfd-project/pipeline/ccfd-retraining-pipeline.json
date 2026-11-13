@@ -1,0 +1,458 @@
+{
+  "Version": "2020-12-01",
+  "Metadata": {},
+  "Parameters": [
+    {
+      "Name": "InputDataS3Uri",
+      "Type": "String",
+      "DefaultValue": ""
+    },
+    {
+      "Name": "DataVersion",
+      "Type": "String",
+      "DefaultValue": "data-v1"
+    },
+    {
+      "Name": "GitSha",
+      "Type": "String",
+      "DefaultValue": "unknown"
+    },
+    {
+      "Name": "ServingImageUri",
+      "Type": "String",
+      "DefaultValue": ""
+    },
+    {
+      "Name": "TrainingImageUri",
+      "Type": "String",
+      "DefaultValue": ""
+    },
+    {
+      "Name": "GateHoldoutS3Uri",
+      "Type": "String",
+      "DefaultValue": "s3://<JOBS_BUCKET>/gate/gate_holdout.csv"
+    },
+    {
+      "Name": "TrainingConfigS3Uri",
+      "Type": "String",
+      "DefaultValue": "s3://<JOBS_BUCKET>/config/p5_02_best_config.yaml"
+    },
+    {
+      "Name": "ModelApprovalStatus",
+      "Type": "String",
+      "DefaultValue": "PendingManualApproval"
+    }
+  ],
+  "Steps": [
+    {
+      "Name": "DataChecksAndFE",
+      "Type": "Processing",
+      "CacheConfig": {
+        "Enabled": true,
+        "ExpireAfter": "P30D"
+      },
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": "ml.t3.medium",
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 5
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": {
+            "Get": "Parameters.TrainingImageUri"
+          },
+          "ContainerEntrypoint": [
+            "python3",
+            "/opt/program/m08_02_data_checks.py"
+          ]
+        },
+        "RoleArn": "<EXECUTION_ROLE_ARN>",
+        "ProcessingInputs": [
+          {
+            "InputName": "raw",
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Parameters.InputDataS3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/input/raw",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "fe",
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<JOBS_BUCKET>/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "fe"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/fe",
+                "S3UploadMode": "EndOfJob"
+              }
+            },
+            {
+              "OutputName": "report",
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<JOBS_BUCKET>/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "report"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/report",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        },
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 3600
+        },
+        "Tags": [
+          {
+            "Key": "course",
+            "Value": "mlops-on-aws"
+          },
+          {
+            "Key": "owner",
+            "Value": "<TAG_OWNER>"
+          },
+          {
+            "Key": "purpose",
+            "Value": "<TAG_PURPOSE>"
+          },
+          {
+            "Key": "created",
+            "Value": "<TAG_CREATED>"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "ProductionTrain",
+      "Type": "Training",
+      "CacheConfig": {
+        "Enabled": true,
+        "ExpireAfter": "P30D"
+      },
+      "Arguments": {
+        "AlgorithmSpecification": {
+          "TrainingImage": {
+            "Get": "Parameters.TrainingImageUri"
+          },
+          "TrainingInputMode": "File"
+        },
+        "RoleArn": "<EXECUTION_ROLE_ARN>",
+        "HyperParameters": {
+          "stage": "production"
+        },
+        "InputDataConfig": [
+          {
+            "ChannelName": "fe",
+            "InputMode": "File",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri": {
+                  "Get": "Steps.DataChecksAndFE.ProcessingOutputConfig.Outputs['fe'].S3Output.S3Uri"
+                },
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            }
+          },
+          {
+            "ChannelName": "config",
+            "InputMode": "File",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri": {
+                  "Get": "Parameters.TrainingConfigS3Uri"
+                },
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            }
+          }
+        ],
+        "OutputDataConfig": {
+          "S3OutputPath": "s3://<JOBS_BUCKET>/pipeline-models/"
+        },
+        "ResourceConfig": {
+          "InstanceType": "ml.m5.large",
+          "InstanceCount": 1,
+          "VolumeSizeInGB": 5
+        },
+        "EnableManagedSpotTraining": true,
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 3600,
+          "MaxWaitTimeInSeconds": 7200
+        },
+        "ProfilerConfig": {
+          "DisableProfiler": true
+        },
+        "Environment": {
+          "MLFLOW_TRACKING_URI": "<MLFLOW_APP_ARN>"
+        },
+        "Tags": [
+          {
+            "Key": "course",
+            "Value": "mlops-on-aws"
+          },
+          {
+            "Key": "owner",
+            "Value": "<TAG_OWNER>"
+          },
+          {
+            "Key": "purpose",
+            "Value": "<TAG_PURPOSE>"
+          },
+          {
+            "Key": "created",
+            "Value": "<TAG_CREATED>"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "EvaluateVsChampion",
+      "Type": "Processing",
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": "ml.t3.medium",
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 5
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": {
+            "Get": "Parameters.TrainingImageUri"
+          },
+          "ContainerEntrypoint": [
+            "python3",
+            "/opt/program/m13_03_evaluate_vs_champion.py"
+          ]
+        },
+        "RoleArn": "<EXECUTION_ROLE_ARN>",
+        "ProcessingInputs": [
+          {
+            "InputName": "model",
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Steps.ProductionTrain.ModelArtifacts.S3ModelArtifacts"
+              },
+              "LocalPath": "/opt/ml/processing/input/model",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          },
+          {
+            "InputName": "gateholdout",
+            "S3Input": {
+              "S3Uri": {
+                "Get": "Parameters.GateHoldoutS3Uri"
+              },
+              "LocalPath": "/opt/ml/processing/input/gate",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated",
+              "S3CompressionType": "None"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "gate",
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<JOBS_BUCKET>/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "gate"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/gate",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        },
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 3600
+        },
+        "Tags": [
+          {
+            "Key": "course",
+            "Value": "mlops-on-aws"
+          },
+          {
+            "Key": "owner",
+            "Value": "<TAG_OWNER>"
+          },
+          {
+            "Key": "purpose",
+            "Value": "<TAG_PURPOSE>"
+          },
+          {
+            "Key": "created",
+            "Value": "<TAG_CREATED>"
+          }
+        ]
+      },
+      "PropertyFiles": [
+        {
+          "PropertyFileName": "GateDecision",
+          "OutputName": "gate",
+          "FilePath": "gate_decision.json"
+        }
+      ]
+    },
+    {
+      "Name": "CheckBeatsChampion",
+      "Type": "Condition",
+      "Arguments": {
+        "Conditions": [
+          {
+            "Type": "Equals",
+            "LeftValue": {
+              "Std:JsonGet": {
+                "PropertyFile": {
+                  "Get": "Steps.EvaluateVsChampion.PropertyFiles.GateDecision"
+                },
+                "Path": "promote"
+              }
+            },
+            "RightValue": 1
+          }
+        ],
+        "IfSteps": [
+          {
+            "Name": "RegisterCandidate",
+            "Type": "RegisterModel",
+            "Arguments": {
+              "ModelPackageGroupName": "ccfd-fraud-detector",
+              "InferenceSpecification": {
+                "Containers": [
+                  {
+                    "Image": {
+                      "Get": "Parameters.ServingImageUri"
+                    },
+                    "ModelDataUrl": {
+                      "Get": "Steps.ProductionTrain.ModelArtifacts.S3ModelArtifacts"
+                    }
+                  }
+                ],
+                "SupportedContentTypes": [
+                  "application/json"
+                ],
+                "SupportedResponseMIMETypes": [
+                  "application/json"
+                ],
+                "SupportedRealtimeInferenceInstanceTypes": [
+                  "ml.m5.large"
+                ],
+                "SupportedTransformInstanceTypes": [
+                  "ml.m5.large"
+                ]
+              },
+              "ModelApprovalStatus": {
+                "Get": "Parameters.ModelApprovalStatus"
+              },
+              "CustomerMetadataProperties": {
+                "data_version": {
+                  "Get": "Parameters.DataVersion"
+                },
+                "input_data": {
+                  "Get": "Parameters.InputDataS3Uri"
+                },
+                "git_sha": {
+                  "Get": "Parameters.GitSha"
+                },
+                "made_by": "ccfd-retraining-pipeline",
+                "execution": {
+                  "Get": "Execution.PipelineExecutionId"
+                },
+                "net_benefit": {
+                  "Std:Join": {
+                    "On": "",
+                    "Values": [
+                      {
+                        "Std:JsonGet": {
+                          "PropertyFile": {
+                            "Get": "Steps.EvaluateVsChampion.PropertyFiles.GateDecision"
+                          },
+                          "Path": "candidate.net_benefit"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "gate_decision": {
+                  "Std:JsonGet": {
+                    "PropertyFile": {
+                      "Get": "Steps.EvaluateVsChampion.PropertyFiles.GateDecision"
+                    },
+                    "Path": "decision"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "ElseSteps": [
+          {
+            "Name": "CandidateNotBetter",
+            "Type": "Fail",
+            "Arguments": {
+              "ErrorMessage": {
+                "Std:Join": {
+                  "On": "",
+                  "Values": [
+                    "REJECT: ",
+                    {
+                      "Std:JsonGet": {
+                        "PropertyFile": {
+                          "Get": "Steps.EvaluateVsChampion.PropertyFiles.GateDecision"
+                        },
+                        "Path": "reason"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Secret scan before every commit: gitleaks, pinned to an exact version (never "latest").
+# gitleaks-system runs the gitleaks you installed (use the same version as rev).
+# pass_filenames: false is needed with the gitleaks-system hook of v8.30.1; without it gitleaks stops with
+# "accepts at most 1 arg(s)".
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks-system
+        pass_filenames: false

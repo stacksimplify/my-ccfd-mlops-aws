@@ -1,0 +1,68 @@
+# MLOps 14: continuous delivery of ONE new package (from ct.yml, or by hand with its ARN):
+# ccfd-staging (a plain model of the still-Pending package) + smoke test -> the GitHub Environment "production"
+# (a person clicks Approve) -> the package set Approved -> a canary on ccfd-prod with auto-rollback ->
+# MLflow @champion follows. It never deploys an older package: no package ARN, no run.
+name: cd
+on:
+  workflow_call:
+    inputs:
+      package_version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: "The new package version in ccfd-fraud-detector (a number; never the ARN: logs can be public)"
+        required: true
+permissions:
+  contents: read
+  id-token: write
+env:
+  MLOPS_SUFFIX: ${{ vars.MLOPS_SUFFIX }}
+  MLOPS_EXECUTION_ROLE_ARN: ${{ secrets.MLOPS_EXECUTION_ROLE_ARN }}
+  MLOPS_MLFLOW_APP_ARN: ${{ secrets.MLOPS_MLFLOW_APP_ARN }}
+  MLFLOW_TRACKING_URI: ${{ secrets.MLOPS_MLFLOW_APP_ARN }}
+  MLOPS_OWNER: ${{ vars.MLOPS_OWNER }}
+  MLOPS_PURPOSE: ${{ vars.MLOPS_PURPOSE }}
+  MLOPS_CREATED: ${{ vars.MLOPS_CREATED }}
+jobs:
+  staging:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ccfd-project
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - run: "pip install --only-binary=:all: -r requirements-ci.txt"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: python m14_03_deploy_staging.py --package-version "${{ inputs.package_version }}"
+      - run: python m14_03_smoke_test.py --endpoint ccfd-staging
+      - name: delete ccfd-staging (it bills by the hour)
+        if: always()
+        run: python -m mlops_utils.endpoints delete --endpoint ccfd-staging
+  production:
+    needs: staging
+    runs-on: ubuntu-24.04
+    environment: production
+    defaults:
+      run:
+        working-directory: ccfd-project
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.8"
+      - run: "pip install --only-binary=:all: -r requirements-ci.txt"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: python m14_03_guarded_rollout.py --package-version "${{ inputs.package_version }}" --approved-by "${{ github.actor }}"
+      - run: python m14_03_sync_champion_alias.py --package-version "${{ inputs.package_version }}"
+      - run: python m14_04_check_sync.py

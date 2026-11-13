@@ -1,0 +1,82 @@
+# The course repository's .gitignore: the base project's ML list without its blanket data/ rule, so the DVC
+# pointers data/*.dvc stay tracked (each ccfd-project/.gitignore keeps the data itself out with *.csv).
+
+# Trained models, results, pipeline artifacts, EDA output (from the base project)
+models/
+results/
+artifacts/
+eda_plots/
+auto_eda_reports/
+
+# ML and MLOps outputs
+mlruns/
+mlartifacts/
+mlflow.db
+*.pkl
+*.joblib
+*.csv
+*.parquet
+*.npy
+*.npz
+*.h5
+*.onnx
+*.tar.gz
+*.zip
+.dvc/cache/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Terraform: state and plugins are never committed; .terraform.lock.hcl IS committed
+*.tfstate*
+.terraform/
+backend.hcl
+
+# Python (from the base project)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments (from the base project)
+.venv/
+venv/
+ENV/
+
+# IDE (from the base project)
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS (from the base project)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter (from the base project)
+.ipynb_checkpoints/
+
+# Microsoft Office lock files (from the base project)
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.xls
+
+# Terraform saved plans and variable files
+*.tfplan
+tfplan
+*.tfvars
+*.tfvars.json
+
+# The course VM: your own settings
+my-vm-settings.sh
+# The course VM key files (02-create-keypair.sh): never committed
+keypair-local/

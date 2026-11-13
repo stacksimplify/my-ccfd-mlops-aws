@@ -1,0 +1,28 @@
+# Serving image constraints (built 2026-10-21).
+# Every package in the image, pinned: the image's pip freeze, with the base project's pins where the base project pins a package
+# (matplotlib 3.10.8, requests 2.32.5, python-dotenv 1.2.1) and botocore==1.43.106 (boto3 1.43.106).
+# Used as: pip install --only-binary=:all: -r requirements-serving.txt -c constraints-serving.txt
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+click==8.5.0
+fastapi==0.128.0
+h11==0.16.0
+idna==3.20
+joblib==1.5.3
+numpy==2.4.1
+pandas==2.3.3
+pydantic==2.12.5
+pydantic_core==2.41.5
+python-dateutil==2.9.0.post0
+pytz==2026.5
+PyYAML==6.0.3
+scikit-learn==1.8.0
+scipy==1.17.0
+six==1.17.0
+starlette==0.50.0
+threadpoolctl==3.7.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+tzdata==2026.5
+uvicorn==0.40.0

@@ -1,0 +1,39 @@
+# .dockerignore for Dockerfile.serving and Dockerfile.training: keep the build context
+# small and keep data, models, results and secrets out of every image. The model reaches the serving
+# container at run time, mounted at /opt/ml/model; the data and the config reach a job through its
+# channels. Neither is ever baked in.
+# A pattern without **/ matches only at the top of the ccfd-project folder.
+
+# Data, models, results and local runs
+data/
+models/
+results/
+artifacts/
+mlruns/
+sm-local/
+logs/
+
+# Tests and local environments
+tests/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Data and model files in any folder
+**/*.csv
+**/*.pkl
+**/*.joblib
+**/*.tar.gz
+**/*.parquet
+
+# Python caches in any folder
+**/__pycache__/
+**/*.pyc
+
+# Git, DVC and env files (.env.mlops holds account settings: never in an image)
+.git/
+.gitignore
+.dvc/
+**/*.dvc
+.env*

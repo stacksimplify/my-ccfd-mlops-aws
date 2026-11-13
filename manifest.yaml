@@ -1,0 +1,34 @@
+# manifest.yaml: the course's frozen inputs. The scripts and tests check each file against its md5 here.
+# md5 = md5sum <file> on Linux (md5 -q <file> on macOS).
+
+config:   # the base project's fixed YAML (the best settings of its search)
+  file: ccfd-project/config/p5_02_best_config.yaml
+  md5: a2681c49399400ea747c1b250e7be657
+  s3_key: config/p5_02_best_config.yaml   # in the jobs bucket
+
+data:
+  v1:
+    command: python p1_01_generate_initial_dataset.py
+    file: data/credit_card_transactions_latest.csv
+    rows: 10000
+    md5: 65ce973256292d47137e8ddb89840528
+  v2:
+    command: python m03_03_simulate_new_data.py --mode append --rows 5000 --seed 201   # appends to data v1
+    file: data/credit_card_transactions_latest.csv
+    rows: 15000
+    md5: 6113a02eb0c63b0093ea3c3a23d30bcc
+  v3:
+    command: python m03_03_simulate_new_data.py --mode append --rows 5000 --seed 202   # appends to data v2
+    file: data/credit_card_transactions_latest.csv
+    rows: 20000
+    md5: 1ff27c47b6f0278c0e224c178709acee
+
+gate_holdout:   # the 2,000 rows every Net Benefit gate scores on
+  command: python m03_03_simulate_new_data.py --mode refresh --rows 2000 --seed 301 --output data/gate_holdout.csv
+  file: data/gate_holdout.csv
+  rows: 2000
+  md5: 5ace239616277d7e99bf338324fa8589
+  s3_key: gate/gate_holdout.csv   # in the jobs bucket
+
+gate_x:   # the Net Benefit of the base project's tuned model on the gate holdout
+  value: 36975

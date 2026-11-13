@@ -1,0 +1,18 @@
+Copyright (c) StackSimplify / Kalyan Reddy Daida. All rights reserved.
+
+This repository is the project template of the "MLOps on AWS" course by
+StackSimplify.
+
+You may use this material for your own personal learning. As a student of the
+course, you may also make your own copy of this repository with "Use this
+template" (as MLOps 14 shows), keep that copy public or private, change it,
+and run it in your own AWS account, for your own learning. Keep this LICENSE
+file in your copy.
+
+Apart from that, you may NOT redistribute, repackage, resell, mirror, or
+publish this material (in whole or in part), or use it to create a competing
+course or product, without prior written permission from the copyright holder.
+
+THE MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.

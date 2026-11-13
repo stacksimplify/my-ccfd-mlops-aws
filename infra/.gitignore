@@ -1,0 +1,24 @@
+# infra/.gitignore: files Terraform writes on your EC2 VM that are never committed.
+# It travels with every copy of infra/, so a copy is safe without the repository's root .gitignore.
+# Committed on purpose: every *.tf file, each layer's .terraform.lock.hcl and backend.hcl.example.
+
+# State (also the lock info and the backups), the provider plugins, and the backend settings 00-state-bucket writes
+*.tfstate*
+.terraform/
+backend.hcl
+
+# Saved plans: a plan file holds resource details (ARNs with the account ID) and every variable value
+*.tfplan
+tfplan
+
+# Your own values (for example terraform.tfvars with your GitHub repository and IDs)
+*.tfvars
+*.tfvars.json
+
+# Local overrides (for example a backend override for a test) and crash logs
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log

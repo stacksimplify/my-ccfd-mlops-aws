@@ -1,0 +1,9 @@
+# infra/backend.hcl.example: the shape of infra/backend.hcl.
+# You never write infra/backend.hcl by hand: infra/00-state-bucket writes it on terraform apply (and it is never
+# committed). <random6> is the 6 hex characters of your state bucket (terraform -chdir=infra/00-state-bucket output -raw suffix).
+# Layers 01 to 06 each name their own state key (mlops/<layer>/terraform.tfstate) and read the rest from here:
+#   terraform init -backend-config=<path to infra/backend.hcl>   (../backend.hcl from a layer folder next to it)
+bucket       = "ccfd-mlops-tfstate-<random6>"
+region       = "us-east-1"
+use_lockfile = true
+encrypt      = true

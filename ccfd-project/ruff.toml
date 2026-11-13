@@ -1,0 +1,23 @@
+# Ruff settings. From the ccfd-project folder, "python -m ruff check ." checks the course's own files.
+# The base project's 20 frozen files are never edited, so ruff leaves the base project's Python files out; the list matches
+# the base project freeze list base_project.sha256 (its requirements.txt and templates/index.html are not Python).
+extend-exclude = [
+    "p1_01_generate_initial_dataset.py",
+    "p2_eda_base.py",
+    "p3_01_train_model_baseline.py",
+    "p3_02_inference_api_baseline.py",
+    "p3_03_inference_test_baseline.py",
+    "p4_01_feature_engineering_fe1.py",
+    "p4_02_eda_amount_ratio_fe1.py",
+    "p4_03_train_model_with_fe1.py",
+    "p5_01_train_hyperparameter_tuning.py",
+    "p5_02_class_weight_gridsearch.py",
+    "p5_03_train_production_model.py",
+    "p5_04_inference_api.py",
+    "p5_05_inference_test.py",
+    "utils/__init__.py",
+    "utils/data_utils.py",
+    "utils/feature_engineering_utils.py",
+    "utils/metrics_utils.py",
+    "utils/model_utils.py",
+]
